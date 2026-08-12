@@ -1,4 +1,5 @@
 """XPT2046 Touch module."""
+
 from time import sleep
 from micropython import const  # type: ignore
 
@@ -16,9 +17,19 @@ class Touch(object):
     GET_BATTERY = const(0b10100000)  # Battery monitor
     GET_AUX = const(0b11100000)  # Auxiliary input to ADC
 
-    def __init__(self, spi, cs, int_pin=None, int_handler=None,
-                 width=240, height=320,
-                 x_min=100, x_max=1962, y_min=100, y_max=1900):
+    def __init__(
+        self,
+        spi,
+        cs,
+        int_pin=None,
+        int_handler=None,
+        width=240,
+        height=320,
+        x_min=100,
+        x_max=1962,
+        y_min=100,
+        y_max=1900,
+    ):
         """Initialize touch screen controller.
 
         Args:
@@ -55,14 +66,15 @@ class Touch(object):
             self.int_pin.init(int_pin.IN)
             self.int_handler = int_handler
             self.int_locked = False
-            int_pin.irq(trigger=int_pin.IRQ_FALLING | int_pin.IRQ_RISING,
-                        handler=self.int_press)
+            int_pin.irq(
+                trigger=int_pin.IRQ_FALLING | int_pin.IRQ_RISING, handler=self.int_press
+            )
 
     def get_touch(self):
         """Take multiple samples to get accurate touch reading."""
         timeout = 2  # set timeout to 2 seconds
         confidence = 5
-        buff = [[0, 0] for x in range(confidence)]
+        buff = [(0, 0) for _ in range(confidence)]
         buf_length = confidence  # Require a confidence of 5 good samples
         buffptr = 0  # Track current buffer position
         nsamples = 0  # Count samples
@@ -70,21 +82,23 @@ class Touch(object):
             if nsamples == buf_length:
                 meanx = sum([c[0] for c in buff]) // buf_length
                 meany = sum([c[1] for c in buff]) // buf_length
-                dev = sum([(c[0] - meanx)**2 +
-                          (c[1] - meany)**2 for c in buff]) / buf_length
+                dev = (
+                    sum([(c[0] - meanx) ** 2 + (c[1] - meany) ** 2 for c in buff])
+                    / buf_length
+                )
                 if dev <= 50:  # Deviation should be under margin of 50
                     return self.normalize(meanx, meany)
             # get a new value
             sample = self.raw_touch()  # get a touch
             if sample is None:
-                nsamples = 0    # Invalidate buff
+                nsamples = 0  # Invalidate buff
             else:
                 buff[buffptr] = sample  # put in buff
                 buffptr = (buffptr + 1) % buf_length  # Incr, until rollover
                 nsamples = min(nsamples + 1, buf_length)  # Incr. until max
 
-            sleep(.05)
-            timeout -= .05
+            sleep(0.05)
+            timeout -= 0.05
         return None
 
     def int_press(self, pin):
@@ -95,10 +109,11 @@ class Touch(object):
 
             if buff is not None:
                 x, y = self.normalize(*buff)
-                self.int_handler(x, y)
-            sleep(.1)  # Debounce falling edge
+                if self.int_handler is not None:
+                    self.int_handler(x, y)
+            sleep(0.1)  # Debounce falling edge
         elif pin.value() and self.int_locked:
-            sleep(.1)  # Debounce rising edge
+            sleep(0.1)  # Debounce rising edge
             self.int_locked = False  # Unlock interrupt
 
     def normalize(self, x, y):

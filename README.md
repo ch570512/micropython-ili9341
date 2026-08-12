@@ -1,12 +1,63 @@
 # micropython-ili9341
-MicroPython ILI9341 Display and XPT2046 Touch Screen Drivers.  Also compatible with ST7735.
+<a href="https://www.buymeacoffee.com/ch570512" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 150px !important;"></a>
 
-Full write up on my website [Rototron](https://www.rototron.info/projects/esp32-pwned-password-checker/) or click picture below for a YouTube video:
+This MicroPython class enables the use of (proportional) Adafruit_GFX library fonts with rdagger's [micropython-ili9341](https://github.com/rdagger/micropython-ili9341) display driver.
+Simply replace `xglcd_font.py` with `gfx_font.py` in your project — no other changes are required.
+All existing functionality of `ili9341.py` remains fully compatible.
 
-[![ILI9341 Tutorial](https://img.youtube.com/vi/NJuOkSSfgUQ/sddefault.jpg)](https://youtu.be/NJuOkSSfgUQ )
+> 📖 Full API reference for `ili9341.py` (every class, method and function) is available in [API.md](API.md).
 
-_Tested on ESP32 (Wemos Lolin32 & Loline32 Pro)_
+```python
+from ili9341 import Display, color565
+from gfx_font import GfxFont
 
-#### Notes
-1. Use the img2rgb565.py tool located in the utils folder to change image files like JPEG and PNG into the required raw RGB565 format.
-2. The fonts available in this repository were made with a free conversion tool named [GLCD Font Creator](https://www.mikroe.com/glcd-font-creator/).
+font = GfxFont("FreeSansBold24pt7b.h")
+
+text = "Hello world!"
+text_w = font.measure_text(text)
+x = (320 - text_w) // 2
+y = (240 - font.y_advance * font.scale) // 2
+display.draw_text(x, y, text, font, color565(255, 255, 255), color565(255, 0, 0), False, False, 1)
+```
+
+A simple `print()` function is included that writes to the display like to a console:
+
+```python
+def print(
+        self, text, color=0xFFFF, background=0, font=None, spacing=1, x=None, y=None
+    ):
+        """Print text at an internal cursor, console style.
+
+        The cursor advances after every printed character, so the next call
+        to print() continues at the last position. A carriage return (\r)
+        or line feed (\n) moves the cursor to the start of the next line.
+        Text that would pass the right edge of the display wraps to the
+        next line.
+
+        Args:
+            text (str): Text to print.
+            color (int): RGB565 color value (default: white).
+            background (int): RGB565 background color (default: black).
+            font (optional): Font object. If None the built-in 8x8 font
+                is used.
+            spacing (int): Extra pixels between letters (default: 1, only
+                used with a custom font).
+            x (int|None): Optional start column, overrides the cursor.
+            y (int|None): Optional start row, overrides the cursor.
+        """
+```
+
+Set the display rotation at runtime:
+
+```python
+def set_rotation(self, rotation, mirror=False):
+    """Change display rotation at runtime (re-sends the MADCTL command).
+    Args:
+        rotation (Optional int): Rotation must be 0 default, 90. 180 or 270
+        mirror (Optional bool): Mirror display (default False)
+    """
+```
+
+For more info on the original library go to https://github.com/rdagger/micropython-ili9341
+
+Copyright © 2026 [ch570512](https://github.com/ch570512)

@@ -1,4 +1,5 @@
 """XGLCD Font Utility."""
+
 from math import ceil, floor
 
 
@@ -37,8 +38,7 @@ class XglcdFont(object):
         self.height = max(height, 8)
         self.start_letter = start_letter
         self.letter_count = letter_count
-        self.bytes_per_letter = (floor(
-            (self.height - 1) / 8) + 1) * self.width + 1
+        self.bytes_per_letter = (floor((self.height - 1) / 8) + 1) * self.width + 1
         self.__load_xglcd_font(path)
 
     def __load_xglcd_font(self, path):
@@ -52,28 +52,29 @@ class XglcdFont(object):
         self.letters = bytearray(bytes_per_letter * self.letter_count)
         mv = memoryview(self.letters)
         offset = 0
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             for line in f:
                 # Skip lines that do not start with hex values
                 line = line.strip()
-                if len(line) == 0 or line[0:2] != '0x':
+                if len(line) == 0 or line[0:2] != "0x":
                     continue
                 # Remove comments
-                comment = line.find('//')
+                comment = line.find("//")
                 if comment != -1:
                     line = line[0:comment].strip()
                 # Remove trailing commas
-                if line.endswith(','):
-                    line = line[0:len(line) - 1]
+                if line.endswith(","):
+                    line = line[0 : len(line) - 1]
                 # Convert hex strings to bytearray and insert in to letters
-                mv[offset: offset + bytes_per_letter] = bytearray(
-                    int(b, 16) for b in line.split(','))
+                mv[offset : offset + bytes_per_letter] = bytearray(
+                    int(b, 16) for b in line.split(",")
+                )
                 offset += bytes_per_letter
 
     def lit_bits(self, n):
         """Return positions of 1 bits only."""
         while n:
-            b = n & (~n+1)
+            b = n & (~n + 1)
             yield self.BIT_POS[b]
             n ^= b
 
@@ -93,11 +94,11 @@ class XglcdFont(object):
         letter_ord = ord(letter) - self.start_letter
         # Confirm font contains letter
         if letter_ord >= self.letter_count:
-            print('Font does not contain character: ' + letter)
-            return b'', 0, 0
+            print("Font does not contain character: " + letter)
+            return b"", 0, 0
         bytes_per_letter = self.bytes_per_letter
         offset = letter_ord * bytes_per_letter
-        mv = memoryview(self.letters[offset:offset + bytes_per_letter])
+        mv = memoryview(self.letters[offset : offset + bytes_per_letter])
 
         # Get width of letter (specified by first byte)
         letter_width = mv[0]
@@ -106,11 +107,11 @@ class XglcdFont(object):
         letter_size = letter_height * letter_width
         # Create buffer (double size to accommodate 16 bit colors)
         if background:
-            buf = bytearray(background.to_bytes(2, 'big') * letter_size)
+            buf = bytearray(background.to_bytes(2, "big") * letter_size)
         else:
             buf = bytearray(letter_size * 2)
 
-        msb, lsb = color.to_bytes(2, 'big')
+        msb, lsb = color.to_bytes(2, "big")
 
         if landscape:
             # Populate buffer in order for landscape

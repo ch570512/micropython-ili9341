@@ -1,10 +1,10 @@
 """ILI9341 Display module."""
 
-from time import sleep
+from framebuf import FrameBuffer, RGB565
 from math import cos, sin, pi, radians
+from micropython import const
 from sys import implementation
-from framebuf import FrameBuffer, RGB565  # type: ignore
-from micropython import const  # type: ignore
+from time import sleep
 
 
 def color565(r, g, b):
@@ -25,63 +25,63 @@ class Display(object):
     """
 
     # Command constants from ILI9341 datasheet
-    NOP = const(0x00)  # No-op
-    SWRESET = const(0x01)  # Software reset
-    RDDID = const(0x04)  # Read display ID info
-    RDDST = const(0x09)  # Read display status
-    SLPIN = const(0x10)  # Enter sleep mode
-    SLPOUT = const(0x11)  # Exit sleep mode
-    PTLON = const(0x12)  # Partial mode on
-    NORON = const(0x13)  # Normal display mode on
-    RDMODE = const(0x0A)  # Read display power mode
-    RDMADCTL = const(0x0B)  # Read display MADCTL
-    RDPIXFMT = const(0x0C)  # Read display pixel format
-    RDIMGFMT = const(0x0D)  # Read display image format
-    RDSELFDIAG = const(0x0F)  # Read display self-diagnostic
-    INVOFF = const(0x20)  # Display inversion off
-    INVON = const(0x21)  # Display inversion on
-    GAMMASET = const(0x26)  # Gamma set
+    DFUNCTR = const(0xB6)  # Display function control
     DISPLAY_OFF = const(0x28)  # Display off
     DISPLAY_ON = const(0x29)  # Display on
-    SET_COLUMN = const(0x2A)  # Column address set
-    SET_PAGE = const(0x2B)  # Page address set
-    WRITE_RAM = const(0x2C)  # Memory write
-    READ_RAM = const(0x2E)  # Memory read
-    PTLAR = const(0x30)  # Partial area
-    VSCRDEF = const(0x33)  # Vertical scrolling definition
-    MADCTL = const(0x36)  # Memory access control
-    VSCRSADD = const(0x37)  # Vertical scrolling start address
-    PIXFMT = const(0x3A)  # COLMOD: Pixel format set
-    WRITE_DISPLAY_BRIGHTNESS = const(0x51)  # Brightness hardware dependent!
-    READ_DISPLAY_BRIGHTNESS = const(0x52)
-    WRITE_CTRL_DISPLAY = const(0x53)
-    READ_CTRL_DISPLAY = const(0x54)
-    WRITE_CABC = const(0x55)  # Write Content Adaptive Brightness Control
-    READ_CABC = const(0x56)  # Read Content Adaptive Brightness Control
-    WRITE_CABC_MINIMUM = const(0x5E)  # Write CABC Minimum Brightness
-    READ_CABC_MINIMUM = const(0x5F)  # Read CABC Minimum Brightness
+    DTCA = const(0xE8)  # Driver timing control A
+    DTCB = const(0xEA)  # Driver timing control B
+    ENABLE3G = const(0xF2)  # Enable 3 gamma control
     FRMCTR1 = const(0xB1)  # Frame rate control (In normal mode/full colors)
     FRMCTR2 = const(0xB2)  # Frame rate control (In idle mode/8 colors)
     FRMCTR3 = const(0xB3)  # Frame rate control (In partial mode/full colors)
+    GAMMASET = const(0x26)  # Gamma set
+    GMCTRN1 = const(0xE1)  # Negative gamma correction
+    GMCTRP1 = const(0xE0)  # Positive gamma correction
     INVCTR = const(0xB4)  # Display inversion control
-    DFUNCTR = const(0xB6)  # Display function control
+    INVOFF = const(0x20)  # Display inversion off
+    INVON = const(0x21)  # Display inversion on
+    MADCTL = const(0x36)  # Memory access control
+    NOP = const(0x00)  # No-op
+    NORON = const(0x13)  # Normal display mode on
+    PIXFMT = const(0x3A)  # COLMOD: Pixel format set
+    POSC = const(0xED)  # Power on sequence control
+    PTLAR = const(0x30)  # Partial area
+    PTLON = const(0x12)  # Partial mode on
+    PUMPRC = const(0xF7)  # Pump ratio control
     PWCTR1 = const(0xC0)  # Power control 1
     PWCTR2 = const(0xC1)  # Power control 2
     PWCTRA = const(0xCB)  # Power control A
     PWCTRB = const(0xCF)  # Power control B
-    VMCTR1 = const(0xC5)  # VCOM control 1
-    VMCTR2 = const(0xC7)  # VCOM control 2
+    RDDID = const(0x04)  # Read display ID info
+    RDDST = const(0x09)  # Read display status
     RDID1 = const(0xDA)  # Read ID 1
     RDID2 = const(0xDB)  # Read ID 2
     RDID3 = const(0xDC)  # Read ID 3
     RDID4 = const(0xDD)  # Read ID 4
-    GMCTRP1 = const(0xE0)  # Positive gamma correction
-    GMCTRN1 = const(0xE1)  # Negative gamma correction
-    DTCA = const(0xE8)  # Driver timing control A
-    DTCB = const(0xEA)  # Driver timing control B
-    POSC = const(0xED)  # Power on sequence control
-    ENABLE3G = const(0xF2)  # Enable 3 gamma control
-    PUMPRC = const(0xF7)  # Pump ratio control
+    RDIMGFMT = const(0x0D)  # Read display image format
+    RDMADCTL = const(0x0B)  # Read display MADCTL
+    RDMODE = const(0x0A)  # Read display power mode
+    RDPIXFMT = const(0x0C)  # Read display pixel format
+    RDSELFDIAG = const(0x0F)  # Read display self-diagnostic
+    READ_CABC = const(0x56)  # Read Content Adaptive Brightness Control
+    READ_CABC_MINIMUM = const(0x5F)  # Read CABC Minimum Brightness
+    READ_CTRL_DISPLAY = const(0x54)
+    READ_DISPLAY_BRIGHTNESS = const(0x52)
+    READ_RAM = const(0x2E)  # Memory read
+    SET_COLUMN = const(0x2A)  # Column address set
+    SET_PAGE = const(0x2B)  # Page address set
+    SLPIN = const(0x10)  # Enter sleep mode
+    SLPOUT = const(0x11)  # Exit sleep mode
+    SWRESET = const(0x01)  # Software reset
+    VMCTR1 = const(0xC5)  # VCOM control 1
+    VMCTR2 = const(0xC7)  # VCOM control 2
+    VSCRDEF = const(0x33)  # Vertical scrolling definition
+    VSCRSADD = const(0x37)  # Vertical scrolling start address
+    WRITE_CABC = const(0x55)  # Write Content Adaptive Brightness Control
+    WRITE_CABC_MINIMUM = const(0x5E)  # Write CABC Minimum Brightness
+    WRITE_CTRL_DISPLAY = const(0x53)
+    WRITE_DISPLAY_BRIGHTNESS = const(0x51)  # Brightness hardware dependent!
+    WRITE_RAM = const(0x2C)  # Memory write
 
     MIRROR_ROTATE = {  # MADCTL configurations for rotation and mirroring
         (False, 0): 0x80,  # 1000 0000
@@ -131,13 +131,7 @@ class Display(object):
         self.rst = rst
         self.width = width
         self.height = height
-        if (mirror, rotation) not in self.MIRROR_ROTATE:
-            raise ValueError("Rotation must be 0, 90, 180 or 270.")
-        else:
-            self.rotation = self.MIRROR_ROTATE[mirror, rotation]
-            self.bgr = bgr
-            if bgr:  # Set BGR bit
-                self.rotation |= 0b00001000
+        self.bgr = bgr
         # Check for offset
         self.offset = bool(x_offset or y_offset)
         self.x_offset = x_offset
@@ -163,6 +157,7 @@ class Display(object):
             self.reset = self.reset_mpy
             self.write_cmd = self.write_cmd_mpy
             self.write_data = self.write_data_mpy
+        self.set_rotation(rotation, mirror)
         self.reset()
         # Send initialization commands
         self.write_cmd(self.SWRESET)  # Software reset
@@ -287,7 +282,7 @@ class Display(object):
         for y in range(0, h, hlines):
             self.block(0, y, w - 1, y + hlines - 1, line)
 
-    def set_rotation(self, rotation, mirror=False):
+    def set_rotation(self, rotation=0, mirror=False):
         """Change display rotation at runtime (re-sends the MADCTL command).
 
         Args:
@@ -484,9 +479,7 @@ class Display(object):
             self.block(x0, y0, x1, y1, crop)
         return True
 
-    def draw_letter(
-        self, x, y, letter, font, color, background=0, landscape=False, rotate_180=False
-    ):
+    def draw_letter(self, x, y, letter, font, color, background=0):
         """Draw a letter.
 
         Args:
@@ -496,36 +489,15 @@ class Display(object):
             font (XglcdFont object): Font.
             color (int): RGB565 color value.
             background (int): RGB565 background color (default: black)
-            landscape (bool): Orientation (default: False = portrait)
-            rotate_180 (bool): Rotate text by 180 degrees
         """
-        buf, w, h = font.get_letter(letter, color, background, landscape)
-        if rotate_180:
-            # Manually rotate the buffer by 180 degrees
-            # ensure bytes pairs for each pixel retain color565
-            new_buf = bytearray(len(buf))
-            num_pixels = len(buf) // 2
-            for i in range(num_pixels):
-                # The index for the new buffer's byte pair
-                new_idx = (num_pixels - 1 - i) * 2
-                # The index for the original buffer's byte pair
-                old_idx = i * 2
-                # Swap the pixels
-                new_buf[new_idx], new_buf[new_idx + 1] = buf[old_idx], buf[old_idx + 1]
-            buf = new_buf
+        buf, w, h = font.get_letter(letter, color, background)
 
         # Check for errors (Font could be missing specified letter)
         if w == 0:
             return w, h
 
-        if landscape:
-            y -= w
-            # Buffer is rotated, so the drawn block is h wide and w tall
-            block_w = h
-            block_h = w
-        else:
-            block_w = w
-            block_h = h
+        block_w = w
+        block_h = h
 
         # Clip the letter to the display area so text is simply cut off
         # at the edge instead of stopping the whole string.
@@ -675,13 +647,11 @@ class Display(object):
         self,
         x,
         y,
-        text,
+        iterable_text,
         font,
         color,
         background=0,
-        landscape=False,
-        rotate_180=False,
-        spacing=1,
+        spacing=0,
     ):
         """Draw text.
 
@@ -692,33 +662,20 @@ class Display(object):
             font (XglcdFont object): Font
             color (int): RGB565 color value
             background (int): RGB565 background color (default: black)
-            landscape (bool): Orientation (default: False = portrait)
-            rotate_180 (bool): Rotate text by 180 degrees
-            spacing (int): Pixels between letters (default: 1)
+            spacing (int): Pixels between letters (default: 0)
         """
-        iterable_text = reversed(text) if rotate_180 else text
         for letter in iterable_text:
             # Get letter array and letter dimensions
-            w, h = self.draw_letter(
-                x, y, letter, font, color, background, landscape, rotate_180
-            )
+            w, h = self.draw_letter(x, y, letter, font, color, background)
             # Stop once the letter is completely off the display.
             # Partially visible letters are clipped in draw_letter().
             if w == 0 or h == 0:
                 return
-
-            if landscape:
-                # Fill in spacing
-                if spacing:
-                    self.fill_hrect(x, y - w - spacing, h, spacing, background)
-                # Position y for next letter
-                y -= w + spacing
-            else:
-                # Fill in spacing
-                if spacing:
-                    self.fill_hrect(x + w, y, spacing, h, background)
-                # Position x for next letter
-                x += w + spacing
+            # Fill in spacing
+            if spacing:
+                self.fill_hrect(x + w, y, spacing, h, background)
+            # Position x for next letter
+            x += w + spacing
 
     def draw_text8x8(self, x, y, text, color, background=0, rotate=0):
         """Draw text using built-in MicroPython 8x8 bit font.
@@ -770,7 +727,7 @@ class Display(object):
             self._draw_block_clipped(x, y, buf2, h, w)
 
     def print(
-        self, text, color=0xFFFF, background=0, font=None, spacing=1, x=None, y=None
+        self, text, color=0xFFFF, background=0, font=None, spacing=0, x=None, y=None
     ):
         """Print text at an internal cursor, console style.
 
@@ -786,7 +743,7 @@ class Display(object):
             background (int): RGB565 background color (default: black).
             font (optional): Font object. If None the built-in 8x8 font
                 is used.
-            spacing (int): Extra pixels between letters (default: 1, only
+            spacing (int): Extra pixels between letters (default: 0, only
                 used with a custom font).
             x (int|None): Optional start column, overrides the cursor.
             y (int|None): Optional start row, overrides the cursor.

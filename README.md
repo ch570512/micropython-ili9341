@@ -5,7 +5,7 @@ This MicroPython class enables the use of (proportional) Adafruit_GFX library fo
 Simply replace `xglcd_font.py` with `gfx_font.py` in your project — no other changes are required.
 All existing functionality of `ili9341.py` remains fully compatible.
 
-> 📖 Full API reference for `ili9341.py` (every class, method and function) is available in [API.md](API.md).
+> 📖 Full API references (every class, method and function) are available in `API_xxx.md`.
 
 ```python
 from ili9341 import Display, color565
@@ -58,6 +58,6 @@ def set_rotation(self, rotation, mirror=False):
     """
 ```
 
-For more info on the original library go to https://github.com/rdagger/micropython-ili9341
+For more information on the original library go to https://github.com/rdagger/micropython-ili9341
 
 Copyright © 2026 [ch570512](https://github.com/ch570512)

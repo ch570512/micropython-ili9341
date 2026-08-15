@@ -120,13 +120,13 @@ Enable or disable color inversion.
 |-----|------|---------|-------------|
 | `enable` | bool | `True` | `True` = invert colors, `False` = normal |
 
-#### `set_rotation(rotation, mirror=False)`
+#### `set_rotation(rotation=0, mirror=False)`
 
 Change display rotation at runtime (re-sends the `MADCTL` command).
 
 | Arg | Type | Default | Description |
 |-----|------|---------|-------------|
-| `rotation` | int | — | `0`, `90`, `180` or `270` |
+| `rotation` | int | `0` | `0`, `90`, `180` or `270` |
 | `mirror` | bool | `False` | Mirror display |
 
 Raises `ValueError` on an invalid rotation/mirror combination.
@@ -338,21 +338,19 @@ Draw a filled regular n-sided polygon.
 
 ### Text
 
-#### `draw_text(x, y, text, font, color, background=0, landscape=False, rotate_180=False, spacing=1)`
+#### `draw_text(x, y, iterable_text, font, color, background=0, spacing=0)`
 
 Draw a string using a proportional font object (e.g. `GfxFont` / `XglcdFont`).
 
 | Arg | Type | Default | Description |
-|-----|------|---------|-------------|
+|-----|------|-------------|
 | `x` | int | — | Starting X position |
 | `y` | int | — | Starting Y position |
-| `text` | str | — | Text to draw |
+| `iterable_text` | str/iterable | — | Text to draw (any iterable of characters, e.g. `reversed(text)`) |
 | `font` | object | — | Font object with a `get_letter()` method |
 | `color` | int | — | RGB565 text color |
 | `background` | int | `0` | RGB565 background color |
-| `landscape` | bool | `False` | `True` = letters drawn vertically |
-| `rotate_180` | bool | `False` | Rotate text by 180° |
-| `spacing` | int | `1` | Pixels between letters |
+| `spacing` | int | `0` | Pixels between letters |
 
 Prints a warning and returns if a letter has invalid dimensions.
 
@@ -369,7 +367,7 @@ Draw text using MicroPython's built-in 8×8 bitmap font (via `framebuf`).
 | `background` | int | `0` | RGB565 background color |
 | `rotate` | int | `0` | `0`, `90`, `180` or `270` |
 
-#### `print(text, color=0xFFFF, background=0, font=None, spacing=1, x=None, y=None)`
+#### `print(text, color=0xFFFF, background=0, font=None, spacing=0, x=None, y=None)`
 
 Print text at an internal cursor, console style.
 
@@ -384,7 +382,7 @@ edge of the display wraps to the next line.
 | `color` | int | `0xFFFF` | RGB565 text color (white) |
 | `background` | int | `0` | RGB565 background color (black) |
 | `font` | object | `None` | Font object; `None` uses the built-in 8×8 font |
-| `spacing` | int | `1` | Extra pixels between letters (custom font only) |
+| `spacing` | int | `0` | Extra pixels between letters (custom font only) |
 | `x` | int | `None` | Optional start column, overrides the cursor |
 | `y` | int | `None` | Optional start row, overrides the cursor |
 
@@ -440,20 +438,18 @@ Draw a sprite from a pixel buffer, optimized for horizontal drawing.
 
 ### Utility
 
-#### `draw_letter(x, y, letter, font, color, background=0, landscape=False, rotate_180=False)`
+#### `draw_letter(x, y, letter, font, color, background=0)`
 
 Draw a single character using a font object. Called internally by `draw_text()`.
 
 | Arg | Type | Default | Description |
-|-----|------|---------|-------------|
+|-----|------|-------------|
 | `x` | int | — | Starting X position |
 | `y` | int | — | Starting Y position |
 | `letter` | str | — | Character to draw |
 | `font` | object | — | Font object |
 | `color` | int | — | RGB565 text color |
 | `background` | int | `0` | RGB565 background color |
-| `landscape` | bool | `False` | Draw letter vertically |
-| `rotate_180` | bool | `False` | Rotate letter by 180° |
 
 **Returns:** `(w, h)` — width and height of the drawn letter (or `(0, 0)` if
 off-grid).

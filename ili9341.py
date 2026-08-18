@@ -1,10 +1,11 @@
 """ILI9341 Display module."""
 
-from framebuf import FrameBuffer, RGB565
-from math import cos, sin, pi, radians
-from micropython import const
+from math import cos, pi, radians, sin
 from sys import implementation
 from time import sleep
+
+from framebuf import RGB565, FrameBuffer
+from micropython import const
 
 
 def color565(r, g, b):
@@ -18,7 +19,7 @@ def color565(r, g, b):
     return (r & 0xF8) << 8 | (g & 0xFC) << 3 | b >> 3
 
 
-class Display(object):
+class Display:
     """Serial interface for 16-bit color (5-6-5 RGB) IL9341 display.
 
     Note:  All coordinates are zero based.
@@ -271,9 +272,9 @@ class Display(object):
 
         w = self.width
         h = self.height
-        assert (
-            hlines > 0 and h % hlines == 0
-        ), "hlines must be a non-zero factor of height."
+        assert hlines > 0 and h % hlines == 0, (
+            "hlines must be a non-zero factor of height."
+        )
         # Clear display
         if color:
             line = color.to_bytes(2, "big") * (w * hlines)
@@ -431,7 +432,7 @@ class Display(object):
             chunk_size = chunk_height * w * 2
             chunk_y = y
             if chunk_count:
-                for c in range(0, chunk_count):
+                for c in range(chunk_count):
                     buf = f.read(chunk_size)
                     self.block(x, chunk_y, x2, chunk_y + chunk_height - 1, buf)
                     chunk_y += chunk_height
@@ -479,7 +480,7 @@ class Display(object):
             self.block(x0, y0, x1, y1, crop)
         return True
 
-    def draw_letter(self, x, y, letter, font, color, background=0):
+    def draw_letter(self, x, y, letter, font, color, background=0, scale=1):
         """Draw a letter.
 
         Args:
@@ -489,8 +490,9 @@ class Display(object):
             font (XglcdFont object): Font.
             color (int): RGB565 color value.
             background (int): RGB565 background color (default: black)
+            scale (int): Font scale factor (default: 1, allowed: 1 or 2)
         """
-        buf, w, h = font.get_letter(letter, color, background)
+        buf, w, h = font.get_letter(letter, color, background, scale)
 
         # Check for errors (Font could be missing specified letter)
         if w == 0:
@@ -652,6 +654,7 @@ class Display(object):
         color,
         background=0,
         spacing=0,
+        scale=1,
     ):
         """Draw text.
 
@@ -663,10 +666,11 @@ class Display(object):
             color (int): RGB565 color value
             background (int): RGB565 background color (default: black)
             spacing (int): Pixels between letters (default: 0)
+            scale (int): Font scale factor (default: 1, allowed: 1 or 2)
         """
         for letter in iterable_text:
             # Get letter array and letter dimensions
-            w, h = self.draw_letter(x, y, letter, font, color, background)
+            w, h = self.draw_letter(x, y, letter, font, color, background, scale)
             # Stop once the letter is completely off the display.
             # Partially visible letters are clipped in draw_letter().
             if w == 0 or h == 0:
@@ -727,7 +731,16 @@ class Display(object):
             self._draw_block_clipped(x, y, buf2, h, w)
 
     def print(
-        self, text, color=0xFFFF, background=0, font=None, spacing=0, x=None, y=None
+        self,
+        text,
+        color=0xFFFF,
+        background=0,
+        font=None,
+        spacing=0,
+        x=None,
+        y=None,
+        scale=1,
+        wrap=True,
     ):
         """Print text at an internal cursor, console style.
 
@@ -747,6 +760,9 @@ class Display(object):
                 used with a custom font).
             x (int|None): Optional start column, overrides the cursor.
             y (int|None): Optional start row, overrides the cursor.
+            scale (int): Font scale factor (default: 1, allowed: 1 or 2).
+            wrap (bool): Wrap at the right edge (default: True). When False,
+                text is clipped at the display edge instead.
         """
         if x is not None:
             self._cursor_x = x
@@ -755,7 +771,9 @@ class Display(object):
             self._cursor_y = y
 
         if font is not None:
-            line_height = font.y_advance * font.scale
+            if scale != 1 and scale != 2:
+                raise ValueError("scale must be 1 or 2")
+            line_height = font.y_advance * scale
         else:
             line_height = 8
 
@@ -776,7 +794,7 @@ class Display(object):
                     self._cursor_x = self._line_start_x
                     self._cursor_y += line_height
                 else:
-                    if self._cursor_x + 8 > self.width:  # wrap
+                    if wrap and self._cursor_x + 8 > self.width:  # wrap
                         if line:
                             self.draw_text8x8(
                                 line_start, self._cursor_y, line, color, background
@@ -803,16 +821,17 @@ class Display(object):
                             color,
                             background,
                             spacing=spacing,
+                            scale=scale,
                         )
                     line = ""
                     line_start = self._line_start_x
                     self._cursor_x = self._line_start_x
                     self._cursor_y += line_height
                 else:
-                    ch_w = font.measure_text(ch)
+                    ch_w = font.measure_text(ch, scale)
                     if ch_w == 0:
                         continue  # Character not present in font
-                    if self._cursor_x + ch_w + spacing > self.width:  # wrap
+                    if wrap and self._cursor_x + ch_w + spacing > self.width:  # wrap
                         if line:
                             self.draw_text(
                                 line_start,
@@ -822,6 +841,7 @@ class Display(object):
                                 color,
                                 background,
                                 spacing=spacing,
+                                scale=scale,
                             )
                         line = ""
                         line_start = self._line_start_x
@@ -838,6 +858,7 @@ class Display(object):
                     color,
                     background,
                     spacing=spacing,
+                    scale=scale,
                 )
 
     def draw_vline(self, x, y, h, color):
@@ -952,7 +973,7 @@ class Display(object):
         chunk_y = y
         if chunk_count:
             buf = color.to_bytes(2, "big") * chunk_size
-            for c in range(0, chunk_count):
+            for c in range(chunk_count):
                 self.block(x, chunk_y, x + w - 1, chunk_y + chunk_height - 1, buf)
                 chunk_y += chunk_height
 
@@ -1077,7 +1098,7 @@ class Display(object):
         chunk_x = x
         if chunk_count:
             buf = color.to_bytes(2, "big") * chunk_size
-            for c in range(0, chunk_count):
+            for c in range(chunk_count):
                 self.block(chunk_x, y, chunk_x + chunk_width - 1, y + h - 1, buf)
                 chunk_x += chunk_width
 

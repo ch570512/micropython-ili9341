@@ -21,14 +21,13 @@ Glyphs are rendered into RGB565 pixel buffers, ready to be passed to
 
 ## Class `GfxFont`
 
-### `__init__(path, scale=1)`
+### `__init__(path)`
 
 Load and parse a GFX font header file.
 
 | Arg | Type | Default | Description |
 |-----|------|---------|-------------|
 | `path` | str | — | Path to a GFX `.h` font file |
-| `scale` | int | `1` | Integer scale factor for rendering |
 
 After parsing, `letter_count` is set to the number of glyphs in the table and
 `_max_ascent` is derived from the glyph y-offsets. The font data is loaded
@@ -38,7 +37,7 @@ line-by-line to keep RAM usage low, and `gc.collect()` is called at the end.
 from gfx_font import GfxFont
 
 font = GfxFont("FreeSansBold24pt7b.h")        # 1× size
-big  = GfxFont("FreeSansBold24pt7b.h", 2)     # 2× size
+big  = GfxFont("FreeSansBold24pt7b.h")        # same font, scale passed at draw time
 ```
 
 ---
@@ -47,7 +46,6 @@ big  = GfxFont("FreeSansBold24pt7b.h", 2)     # 2× size
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `scale` | int | Render scale factor |
 | `bitmaps` | bytearray | Raw glyph bitmap pixel data |
 | `glyphs` | `array('i')` | Per-glyph metadata (offset, width, height, xAdvance, xOffset, yOffset) |
 | `first_char` | int | Code of the first character in the table (default `0x20` = space) |
@@ -56,16 +54,17 @@ big  = GfxFont("FreeSansBold24pt7b.h", 2)     # 2× size
 | `letter_count` | int | Number of glyphs in the font table |
 | `_max_ascent` | int | Maximum ascent (used internally for vertical positioning) |
 
-`y_advance` and `scale` are handy for centering text vertically:
+`y_advance` is unscaled, so multiply it by the scale you pass when drawing to
+center text vertically:
 
 ```python
-text_h = font.y_advance * font.scale
+text_h = font.y_advance * 2      # 2× scale
 y = (240 - text_h) // 2
 ```
 
 ---
 
-### `get_letter(letter, color, background=0, landscape=False)`
+### `get_letter(letter, color, background=0, scale=1)`
 
 Render a single character into a bytearray of RGB565 pixel data.
 
@@ -74,7 +73,7 @@ Render a single character into a bytearray of RGB565 pixel data.
 | `letter` | str | — | Single character to render |
 | `color` | int | — | RGB565 text color |
 | `background` | int | `0` | RGB565 background color (0 = transparent) |
-| `landscape` | bool | `False` | `True` = rotate the glyph 90° (vertical text) |
+| `scale` | int | `1` | Scale factor (must be `1` or `2`) |
 
 The returned buffer covers the glyph's **advance box**: width =
 `xAdvance × scale`, height = `yAdvance × scale`. The glyph is positioned within
@@ -88,23 +87,23 @@ If `letter` is outside the font's `first_char…last_char` range, a
 are the buffer dimensions (`xAdvance × scale`, `yAdvance × scale`).
 
 ```python
-buf, w, h = font.get_letter("A", color565(255, 255, 255))
+buf, w, h = font.get_letter("A", color565(255, 255, 255), scale=2)
 ```
 
-> **Note:** `Display.draw_text()` calls `get_letter(letter, color, background)`
-> without `landscape`, so glyphs are rendered in portrait orientation there. Use
-> `landscape=True` only when rendering directly.
+> **Note:** `Display.draw_text()` calls `get_letter(letter, color, background, scale)`
+> so glyphs are rendered with the scale passed to `draw_text()` there.
 
 ---
 
-### `measure_text(text)`
+### `measure_text(text, scale=1)`
 
 Measure the pixel width of a text string (using each glyph's `xAdvance ×
 scale`).
 
-| Arg | Type | Description |
-|-----|------|-------------|
-| `text` | str | String to measure |
+| Arg | Type | Default | Description |
+|-----|------|---------|-------------|
+| `text` | str | — | String to measure |
+| `scale` | int | `1` | Scale factor (must be `1` or `2`) |
 
 Characters outside the font's range are skipped (they contribute 0).
 
@@ -112,7 +111,7 @@ Characters outside the font's range are skipped (they contribute 0).
 
 ```python
 text = "Hello world!"
-text_w = font.measure_text(text)
+text_w = font.measure_text(text, scale=2)
 x = (320 - text_w) // 2          # center horizontally
 ```
 
@@ -131,15 +130,15 @@ display = Display(spi, dc=Pin(4), cs=Pin(15), rst=Pin(27), width=320, height=240
 font = GfxFont("FreeSansBold24pt7b.h")
 
 text = "Hello world!"
-text_w = font.measure_text(text)
+text_w = font.measure_text(text, scale=2)
 x = (320 - text_w) // 2
-y = (240 - font.y_advance * font.scale) // 2
+y = (240 - font.y_advance * 2) // 2
 
 display.draw_text(x, y, text, font, color565(255, 255, 255),
-                  color565(255, 0, 0), spacing=1)
+                  color565(255, 0, 0), spacing=1, scale=2)
 
 # Or use the console-style print() with a custom font
-display.print("Line 1", font=font, color=color565(255, 255, 0))
+display.print("Line 1", font=font, color=color565(255, 255, 0), scale=2)
 ```
 
 > **Tip:** All fonts in the `fonts_gfx/` folder are in Adafruit GFX format and

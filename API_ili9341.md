@@ -367,7 +367,7 @@ Draw text using MicroPython's built-in 8×8 bitmap font (via `framebuf`).
 | `background` | int | `0` | RGB565 background color |
 | `rotate` | int | `0` | `0`, `90`, `180` or `270` |
 
-#### `print(text, color=0xFFFF, background=0, font=None, spacing=0, x=None, y=None)`
+#### `print(text, color=0xFFFF, background=0, font=None, spacing=0, x=None, y=None, scale=1, wrap=True)`
 
 Print text at an internal cursor, console style.
 
@@ -385,6 +385,8 @@ edge of the display wraps to the next line.
 | `spacing` | int | `0` | Extra pixels between letters (custom font only) |
 | `x` | int | `None` | Optional start column, overrides the cursor |
 | `y` | int | `None` | Optional start row, overrides the cursor |
+| `scale` | int | `1` | Font scale factor (`1` or `2`) |
+| `wrap` | bool | `True` | Wrap at the right edge; `False` clips instead |
 
 ```python
 display.print("Hello")                 # built-in font at cursor

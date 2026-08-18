@@ -21,8 +21,9 @@
 # SOFTWARE.
 
 import gc
-import micropython
 from array import array
+
+import micropython
 from micropython import const
 
 _GOFF = const(0)  # bitmapOffset
@@ -33,12 +34,49 @@ _GXO = const(4)  # xOffset
 _GYO = const(5)  # yOffset
 _GLYPH_SLOT = const(6)  # fields per glyph
 
+# The font stores special characters at CP437 positions, but MicroPython
+# decodes UTF-8 to Unicode code points. Map code point -> font glyph index.
+_UNICODE_TO_CP437 = {
+    0xC4: 0x8E,  # Ä
+    0xC5: 0x8F,  # Å
+    0xC6: 0x92,  # Æ
+    0xC7: 0x80,  # Ç
+    0xC9: 0x90,  # É
+    0xD1: 0xA5,  # Ñ
+    0xD6: 0x99,  # Ö
+    0xDC: 0x9A,  # Ü
+    0xE0: 0x85,  # à
+    0xE1: 0xA0,  # á
+    0xE2: 0x83,  # â
+    0xE4: 0x84,  # ä
+    0xE5: 0x86,  # å
+    0xE6: 0x91,  # æ
+    0xE7: 0x87,  # ç
+    0xE8: 0x8A,  # è
+    0xE9: 0x82,  # é
+    0xEA: 0x88,  # ê
+    0xEB: 0x89,  # ë
+    0xEC: 0x8D,  # ì
+    0xED: 0xA1,  # í
+    0xEE: 0x8C,  # î
+    0xEF: 0x8B,  # ï
+    0xF1: 0xA4,  # ñ
+    0xF2: 0x95,  # ò
+    0xF3: 0xA2,  # ó
+    0xF4: 0x93,  # ô
+    0xF6: 0x94,  # ö
+    0xF9: 0x97,  # ù
+    0xFA: 0xA3,  # ú
+    0xFB: 0x96,  # û
+    0xFC: 0x81,  # ü
+    0xFF: 0x98,  # ÿ
+}
+
 
 class GfxFont:
     """Load font data in Adafruit GFX format."""
 
-    def __init__(self, path: str, scale: int = 1):
-        self.scale: int = scale
+    def __init__(self, path: str):
         self.bitmaps: bytearray = bytearray()
         self.glyphs = array("i")
         self.first_char: int = 0x20
@@ -72,12 +110,12 @@ class GfxFont:
         if not line:
             return
 
-        if line.endswith(","):
+        if line.endswith(","):  # noqa: FURB188
             line = line[:-1]
 
         for token in line.split(","):
             token = token.strip()
-            if token.startswith("0x") or token.startswith("0X"):
+            if token.startswith(("0x", "0X")):
                 bitmaps.append(int(token, 16))
 
     @staticmethod
@@ -203,10 +241,13 @@ class GfxFont:
 
     @micropython.native
     def get_letter(
-        self, letter: str, color: int, background: int = 0, landscape: bool = False
+        self, letter: str, color: int, background: int, scale: int = 1
     ) -> tuple:
         """Render a single character into a bytearray."""
+        if scale != 1 and scale != 2:
+            raise ValueError("scale must be 1 or 2")
         letter_ord = ord(letter)
+        letter_ord = _UNICODE_TO_CP437.get(letter_ord, letter_ord)
         glyph_idx = letter_ord - self.first_char
 
         if glyph_idx < 0 or glyph_idx >= self.letter_count:
@@ -219,7 +260,7 @@ class GfxFont:
         h = glyps[base + _GH]
         x_adv = glyps[base + _GXA]
         x_off = glyps[base + _GXO]
-        sf = self.scale
+        sf = scale
         c_msb = (color >> 8) & 0xFF
         c_lsb = color & 0xFF
         buf_w = x_adv * sf
@@ -241,64 +282,45 @@ class GfxFont:
         bit_cnt = 0
         bits = 0
 
-        if not landscape:
-            for py in range(h):
-                dst_row = start_row + py * sf
-                for px in range(w):
-                    if bit_cnt == 0:
-                        bits = bitmaps[bm_pos] if bm_pos < bm_len else 0
-                        bm_pos += 1
-                    pixel_on = bits & 0x80
-                    bits <<= 1
-                    bit_cnt += 1
-                    if bit_cnt == 8:
-                        bit_cnt = 0
+        for py in range(h):
+            dst_row = start_row + py * sf
+            for px in range(w):
+                if bit_cnt == 0:
+                    bits = bitmaps[bm_pos] if bm_pos < bm_len else 0
+                    bm_pos += 1
+                pixel_on = bits & 0x80
+                bits <<= 1
+                bit_cnt += 1
+                if bit_cnt == 8:
+                    bit_cnt = 0
 
-                    if pixel_on:
-                        dst_col = start_col + px * sf
-                        for dy in range(sf):
-                            r = dst_row + dy
-                            base_idx = r * buf_w + dst_col
-                            for dx in range(sf):
-                                idx = (base_idx + dx) << 1
-                                buf[idx] = c_msb
-                                buf[idx + 1] = c_lsb
-        else:
-            for py in range(h):
-                dst_row = start_row + py * sf
-                for px in range(w):
-                    if bit_cnt == 0:
-                        bits = bitmaps[bm_pos] if bm_pos < bm_len else 0
-                        bm_pos += 1
-                    pixel_on = bits & 0x80
-                    bits <<= 1
-                    bit_cnt += 1
-                    if bit_cnt == 8:
-                        bit_cnt = 0
-
-                    if pixel_on:
-                        dst_col = start_col + px * sf
-                        for dy in range(sf):
-                            r = dst_row + dy
-                            for dx in range(sf):
-                                p = (buf_w - 1 - (dst_col + dx)) * buf_h + r
-                                idx = p << 1
-                                buf[idx] = c_msb
-                                buf[idx + 1] = c_lsb
+                if pixel_on:
+                    dst_col = start_col + px * sf
+                    for dy in range(sf):
+                        r = dst_row + dy
+                        base_idx = r * buf_w + dst_col
+                        for dx in range(sf):
+                            idx = (base_idx + dx) << 1
+                            buf[idx] = c_msb
+                            buf[idx + 1] = c_lsb
 
         return buf, buf_w, buf_h
 
-    def measure_text(self, text: str) -> int:
+    @micropython.native
+    def measure_text(self, text: str, scale: int = 1) -> int:
         """Measure pixel width of text string."""
+        if scale != 1 and scale != 2:
+            raise ValueError("scale must be 1 or 2")
         total = 0
         first = self.first_char
         last = self.last_char
         glyps = self.glyphs
         glyph_count = len(glyps) // _GLYPH_SLOT
-        sf = self.scale
+        sf = scale
 
         for ch in text:
             ch_ord = ord(ch)
+            ch_ord = _UNICODE_TO_CP437.get(ch_ord, ch_ord)
             if first <= ch_ord <= last:
                 gi = ch_ord - first
                 if gi < glyph_count:

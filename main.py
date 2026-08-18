@@ -20,9 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from machine import Pin, SPI
-from ili9341 import Display, color565
+from machine import SPI, Pin
+
 from gfx_font import GfxFont
+from ili9341 import Display, color565
 
 
 def _ili9341_init() -> Display:
@@ -55,10 +56,10 @@ def main():
     font = GfxFont("fonts/FreeSansBold24pt7b.h")
     # font = GfxFont("fonts/TomThumb.h", scale=2)
 
-    text = "Hello world!xxx"
-    text_w = font.measure_text(text)
+    text = "Hello world!"
+    text_w = font.measure_text(text, scale=1)
     x = (320 - text_w) // 2
-    y = (240 - font.y_advance * font.scale) // 2
+    y = (240 - font.y_advance) // 2
     display.draw_text(x, y, text, font, color565(255, 255, 255), color565(255, 0, 0), 0)
     display.draw_text8x8(220, 180, "Test Test Test", color565(0, 255, 255))
     display.print("Text", x=50, y=50)
@@ -66,6 +67,7 @@ def main():
     display.print("Text3")
     display.print("Test", font=font, color=color565(255, 0, 255), x=180, y=20)
     display.print("Test Test Test Test Test", x=200, y=200)
+    display.print("Test Test Test Test Test", x=200, y=220, wrap=False)
 
 
 if __name__ == "__main__":

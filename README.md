@@ -16,15 +16,16 @@ font = GfxFont("FreeSansBold24pt7b.h")
 text = "Hello world!"
 text_w = font.measure_text(text)
 x = (320 - text_w) // 2
-y = (240 - font.y_advance * font.scale) // 2
-display.draw_text(x, y, text, font, color565(255, 255, 255), color565(255, 0, 0), False, False, 1)
+y = (240 - font.y_advance) // 2
+display.draw_text(x, y, text, font, color565(255, 255, 255), color565(255, 0, 0))
 ```
 
 A simple `print()` function is included that writes to the display like to a console:
 
 ```python
 def print(
-        self, text, color=0xFFFF, background=0, font=None, spacing=1, x=None, y=None
+        self, text, color=0xFFFF, background=0, font=None, spacing=0, x=None, y=None,
+        scale=1, wrap=True
     ):
         """Print text at an internal cursor, console style.
 
@@ -40,10 +41,13 @@ def print(
             background (int): RGB565 background color (default: black).
             font (optional): Font object. If None the built-in 8x8 font
                 is used.
-            spacing (int): Extra pixels between letters (default: 1, only
+            spacing (int): Extra pixels between letters (default: 0, only
                 used with a custom font).
             x (int|None): Optional start column, overrides the cursor.
             y (int|None): Optional start row, overrides the cursor.
+            scale (int): Font scale factor (default: 1, allowed: 1 or 2).
+            wrap (bool): Wrap at the right edge (default: True). When False,
+                text is clipped at the display edge instead.
         """
 ```
 

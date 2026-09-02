@@ -62,6 +62,8 @@ def set_rotation(self, rotation, mirror=False):
     """
 ```
 
-For more information on the original library go to https://github.com/rdagger/micropython-ili9341
+For more information on the original library visit https://github.com/rdagger/micropython-ili9341
+
+Copyright © 2020 rdagger
 
 Copyright © 2026 [ch570512](https://github.com/ch570512)

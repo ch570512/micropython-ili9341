@@ -1,10 +1,11 @@
 """XPT2046 Touch module."""
 
 from time import sleep
+
 from micropython import const  # type: ignore
 
 
-class Touch(object):
+class Touch:
     """Serial interface for XPT2046 Touch Screen Controller."""
 
     # Command constants from ILI9341 datasheet

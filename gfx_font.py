@@ -260,13 +260,23 @@ class GfxFont:
         h = glyps[base + _GH]
         x_adv = glyps[base + _GXA]
         x_off = glyps[base + _GXO]
+        y_off = glyps[base + _GYO]
         sf = scale
         c_msb = (color >> 8) & 0xFF
         c_lsb = color & 0xFF
+        # Size the cell to fit the glyph's own bounding box. Some fonts
+        # (e.g. gfx-fe exports) contain glyphs that overhang the advance
+        # cell -- descenders (yOffset + height > yAdvance) or glyphs wider
+        # than xAdvance. Without this, writing those pixels would raise
+        # IndexError: bytearray index out of range.
         buf_w = x_adv * sf
+        glyph_w = (x_off + w) * sf
+        buf_w = max(buf_w, glyph_w)
         buf_h = self.y_advance * sf
+        glyph_h = (self._max_ascent + y_off + h) * sf
+        buf_h = max(buf_h, glyph_h)
         start_col = x_off * sf
-        start_row = (self._max_ascent + glyps[base + _GYO]) * sf
+        start_row = (self._max_ascent + y_off) * sf
         buf = bytearray(buf_w * buf_h * 2)
 
         if background:
@@ -284,6 +294,8 @@ class GfxFont:
 
         for py in range(h):
             dst_row = start_row + py * sf
+            if dst_row < 0:
+                continue
             for px in range(w):
                 if bit_cnt == 0:
                     bits = bitmaps[bm_pos] if bm_pos < bm_len else 0
@@ -296,6 +308,8 @@ class GfxFont:
 
                 if pixel_on:
                     dst_col = start_col + px * sf
+                    if dst_col < 0:
+                        continue
                     for dy in range(sf):
                         r = dst_row + dy
                         base_idx = r * buf_w + dst_col
